@@ -3,16 +3,23 @@ set -euo pipefail
 
 repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 plug_file="$HOME/.vim/autoload/plug.vim"
+plug_available=true
 
 if [[ ! -f "$plug_file" ]]; then
-    mkdir -p -- "$(dirname -- "$plug_file")"
-    plug_tmp="$(mktemp "${plug_file}.XXXXXX")"
-    trap 'rm -f -- "$plug_tmp"' EXIT
-    curl --fail --location --silent --show-error \
+    plug_tmp=''
+    trap 'if [[ -n "$plug_tmp" ]]; then rm -f -- "$plug_tmp"; fi' EXIT
+    if mkdir -p -- "$(dirname -- "$plug_file")" &&
+        plug_tmp="$(mktemp "${plug_file}.XXXXXX")" &&
+        curl --fail --location --silent --show-error \
         https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim \
-        --output "$plug_tmp"
-    chmod 644 "$plug_tmp"
-    mv -- "$plug_tmp" "$plug_file"
+        --output "$plug_tmp" &&
+        chmod 644 "$plug_tmp" &&
+        mv -- "$plug_tmp" "$plug_file"; then
+        plug_available=true
+    else
+        plug_available=false
+        printf 'Warning: vim-plug installation failed; skipping PlugInstall.\n' >&2
+    fi
 fi
 
 if [[ ! "$HOME/.vimrc" -ef "$repo_dir/.vimrc" ]]; then
@@ -24,6 +31,9 @@ if [[ ! "$HOME/.vimrc" -ef "$repo_dir/.vimrc" ]]; then
     ln -s -- "$repo_dir/.vimrc" "$HOME/.vimrc"
 fi
 
-vim -es -u "$HOME/.vimrc" -i NONE +'PlugInstall --sync' +qa
-
-printf 'Vim configuration, vim-plug, and plugins installed.\n'
+if "$plug_available"; then
+    vim -es -u "$HOME/.vimrc" -i NONE +'PlugInstall --sync' +qa
+    printf 'Vim configuration, vim-plug, and plugins installed.\n'
+else
+    printf 'Vim configuration installed without plugins.\n'
+fi
