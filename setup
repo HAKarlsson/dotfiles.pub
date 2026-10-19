@@ -24,4 +24,6 @@ if [[ ! "$HOME/.vimrc" -ef "$repo_dir/.vimrc" ]]; then
     ln -s -- "$repo_dir/.vimrc" "$HOME/.vimrc"
 fi
 
-printf 'Vim configuration and vim-plug installed. Run :PlugInstall in Vim to install plugins.\n'
+vim -es -u "$HOME/.vimrc" -i NONE +'PlugInstall --sync' +qa
+
+printf 'Vim configuration, vim-plug, and plugins installed.\n'
